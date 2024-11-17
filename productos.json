@@ -1,0 +1,27 @@
+[
+  {
+    "id": "1731787419990",
+    "title": "Camiseta",
+    "description": "Camiseta de algodón 100% orgánico",
+    "code": "CAM123",
+    "price": 20,
+    "stock": 50,
+    "category": "Ropa",
+    "thumbnails": [
+      "img/camiseta1.jpg",
+      "img/camiseta2.jpg"
+    ],
+    "status": true
+  },
+  {
+    "id": "1731865350456",
+    "title": "celular",
+    "description": "Celular Iphone",
+    "code": "CODE1234",
+    "price": 100,
+    "status": true,
+    "stock": 50,
+    "category": "Celulares",
+    "thumbnails": []
+  }
+]
