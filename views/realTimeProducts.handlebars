@@ -1,0 +1,25 @@
+<h2>Lista de Productos</h2>
+<ul id="products-list">
+  {{#each products}}
+    <li id="product-{{this.id}}">
+      <strong>{{this.title}}</strong>: {{this.description}} - ${{this.price}}
+    </li>
+  {{/each}}
+</ul>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+
+  // Escuchar actualizaciones de productos
+  socket.on("updateProducts", (products) => {
+    const list = document.getElementById("products-list");
+    list.innerHTML = ""; // Limpiar la lista
+    products.forEach(product => {
+      const li = document.createElement("li");
+      li.id = `product-${product.id}`;
+      li.innerHTML = `<strong>${product.title}</strong>: ${product.description} - $${product.price}`;
+      list.appendChild(li);
+    });
+  });
+</script>
