@@ -1,34 +1,23 @@
-
-import { Router } from "express";
+import { Router } from 'express';
 import {
-  getAllProducts,
+  getProducts,
   createProduct,
-  deleteProduct,
-} from "../controllers/products.controller.js";
+  getProductById,
+  deleteProduct
+} from '../controllers/products.controller.js';
 
 const router = Router();
 
-// Ruta para obtener todos los productos
-router.get("/", getAllProducts);
+// Obtener todos los productos con filtros, paginación y ordenamiento
+router.get('/', getProducts);
 
-// Ruta para crear un nuevo producto
-router.post("/", async (req, res) => {
-  try {
-    const newProduct = await createProduct(req.body);
-    res.status(201).json(newProduct);
-  } catch (error) {
-    res.status(500).json({ error: "Error al crear el producto" });
-  }
-});
+// Crear un nuevo producto
+router.post('/', createProduct);
 
-// Ruta para eliminar un producto
-router.delete("/:id", async (req, res) => {
-  try {
-    await deleteProduct(Number(req.params.id));
-    res.status(204).send();
-  } catch (error) {
-    res.status(404).json({ error: "Producto no encontrado" });
-  }
-});
+
+router.get('/:pid', getProductById);
+
+
+router.delete('/:pid', deleteProduct);
 
 export default router;

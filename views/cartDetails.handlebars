@@ -1,0 +1,21 @@
+<h1>Carrito de Compras</h1>
+
+{{#each cart.products}}
+  <div class="product">
+    <h2>{{this.product.name}}</h2>
+    <p>{{this.product.description}}</p>
+    <p>Precio: ${{this.product.price}}</p>
+    <p>Cantidad: {{this.quantity}}</p>
+    <button onclick="removeFromCart('{{this.product._id}}')">Eliminar</button>
+  </div>
+{{/each}}
+
+<script>
+  function removeFromCart(productId) {
+    fetch(`/api/carts/1/products/${productId}`, {
+      method: 'DELETE'
+    }).then(response => response.json()).then(data => {
+      console.log('Producto eliminado del carrito', data);
+    });
+  }
+</script>

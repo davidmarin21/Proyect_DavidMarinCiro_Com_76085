@@ -1,45 +1,77 @@
-import fs from "fs/promises";
-import path from "path";
-import { io } from "../index.js"; // Importar el servidor de socket.io
+import Product from '../models/Product.js';
 
-const productsFilePath = path.resolve("productos.json");
-
-// Obtener todos los productos
-export const getProducts = async () => {
-  const data = await fs.readFile(productsFilePath, "utf-8");
-  return JSON.parse(data);
-};
-
-// Obtener todos los productos y enviarlos como respuesta HTTP
-export const getAllProducts = async (req, res) => {
+// Obtener todos los productos con filtros, paginación y ordenamiento
+export const getProducts = async (req, res) => {
   try {
-    const products = await getProducts();
-    res.json(products);
+    const { limit = 10, page = 1, sort = 'asc', query = {} } = req.query;
+
+    const queryFilters = {};
+    if (query.category) queryFilters.category = query.category;
+    if (query.stock) queryFilters.stock = { $gte: 1 };
+
+    const products = await Product.find(queryFilters)
+      .sort({ price: sort === 'asc' ? 1 : -1 })
+      .limit(Number(limit))
+      .skip((page - 1) * limit);
+
+    const total = await Product.countDocuments(queryFilters);
+    const totalPages = Math.ceil(total / limit);
+    const hasPrevPage = page > 1;
+    const hasNextPage = page < totalPages;
+    const prevLink = hasPrevPage ? `/products?limit=${limit}&page=${page - 1}&sort=${sort}&query=${JSON.stringify(queryFilters)}` : null;
+    const nextLink = hasNextPage ? `/products?limit=${limit}&page=${page + 1}&sort=${sort}&query=${JSON.stringify(queryFilters)}` : null;
+
+    res.json({
+      status: 'success',
+      payload: products,
+      totalPages,
+      prevPage: page - 1,
+      nextPage: page + 1,
+      page,
+      hasPrevPage,
+      hasNextPage,
+      prevLink,
+      nextLink
+    });
   } catch (error) {
-    res.status(500).json({ error: "Error al obtener los productos" });
+    res.status(500).json({ status: 'error', message: error.message });
   }
 };
 
 // Crear un nuevo producto
-export const createProduct = async (product) => {
-  const products = await getProducts();
-  product.id = Date.now();
-  products.push(product);
-  await fs.writeFile(productsFilePath, JSON.stringify(products, null, 2));
+export const createProduct = async (req, res) => {
+  try {
+    const { title, description, price, category, stock, thumbnail } = req.body;
+    const newProduct = new Product({ title, description, price, category, stock, thumbnail });
+    await newProduct.save();
+    res.status(201).json({ status: 'success', payload: newProduct });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
 
-  io.emit("updateProducts", products); // Emitir la actualización
-  return product;
+// Obtener un producto por ID
+export const getProductById = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.pid);
+    if (!product) {
+      return res.status(404).json({ status: 'error', message: 'Producto no encontrado' });
+    }
+    res.json({ status: 'success', payload: product });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
 };
 
 // Eliminar un producto
-export const deleteProduct = async (id) => {
-  const products = await getProducts();
-  const updatedProducts = products.filter((p) => p.id !== id);
-
-  if (products.length === updatedProducts.length) {
-    throw new Error("Producto no encontrado");
+export const deleteProduct = async (req, res) => {
+  try {
+    const product = await Product.findByIdAndDelete(req.params.pid);
+    if (!product) {
+      return res.status(404).json({ status: 'error', message: 'Producto no encontrado' });
+    }
+    res.json({ status: 'success', message: 'Producto eliminado correctamente' });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
   }
-
-  await fs.writeFile(productsFilePath, JSON.stringify(updatedProducts, null, 2));
-  io.emit("updateProducts", updatedProducts); // Emitir la actualización
 };

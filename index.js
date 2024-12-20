@@ -1,62 +1,31 @@
+// index.js
 import express from "express";
-import { createServer } from "http";
-import { Server } from "socket.io";
-import handlebars from "express-handlebars";
-import path from "path";
-
+import http from "http";
+import { Server } from "socket.io";  // Asegúrate de importar Server de socket.io
 import productsRouter from "./routes/products.router.js";
+import viewsRouter from "./routes/views.router.js";
 import cartsRouter from "./routes/carts.router.js";
-import { getProducts } from "./controllers/products.controller.js"; // IMPORTAR AQUÍ
+import { connectDB } from "./config/db.js";  // Tu archivo de conexión de MongoDB
 
 const app = express();
-const httpServer = createServer(app);
-export const io = new Server(httpServer);
+const server = http.createServer(app);  // Crear el servidor HTTP para Express
+const io = new Server(server);  // Crear la instancia de Socket.IO
 
-// Configuración de Handlebars
-app.engine("handlebars", handlebars.engine());
-app.set("view engine", "handlebars");
-app.set("views", path.resolve("views"));
+// Exportar 'io' para que pueda ser utilizado en otros archivos
+export { io };
 
-// Middleware
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.resolve("public")));
+app.use(express.static("public"));
+app.set("view engine", "handlebars");
+app.set("views", "./views");
 
-// Rutas
 app.use("/api/products", productsRouter);
 app.use("/api/carts", cartsRouter);
+app.use("/views", viewsRouter);
 
-// Ruta para la vista principal (home)
-app.get("/", async (req, res) => {
-  try {
-    const products = await getProducts(); // Llama a la función correctamente
-    res.render("home", { products });
-  } catch (error) {
-    res.status(500).send("Error al obtener los productos");
-  }
+const PORT = process.env.PORT || 8080;
+server.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
 });
 
-// Ruta para la vista de productos en tiempo real
-app.get("/realtimeproducts", async (req, res) => {
-  try {
-    const products = await getProducts();
-    res.render("realTimeProducts", { products });
-  } catch (error) {
-    res.status(500).send("Error al obtener los productos en tiempo real");
-  }
-});
-
-// WebSocket
-io.on("connection", (socket) => {
-  console.log("Cliente conectado");
-
-  socket.on("disconnect", () => {
-    console.log("Cliente desconectado");
-  });
-});
-
-// Iniciar el servidor
-const PORT = 8080;
-httpServer.listen(PORT, () => {
-  console.log(`Servidor escuchando en http://localhost:${PORT}`);
-});
+connectDB();  
